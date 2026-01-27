@@ -172,7 +172,7 @@ namespace AIUnityTester.Editor
         {
             if (!File.Exists(_serverScriptPath))
             {
-                UnityEngine.Debug.LogError($"Server script not found at: {_serverScriptPath}");
+                UnityEngine.Debug.LogError("Server script not found at: " + _serverScriptPath);
                 return;
             }
 
@@ -180,7 +180,7 @@ namespace AIUnityTester.Editor
             {
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = _pythonPath;
-                psi.Arguments = $"--serverScriptPath}"; // uvicorn 실행 로직이 server.py 내부에 있음
+                psi.Arguments = "\"" + _serverScriptPath + "\"";
                 psi.UseShellExecute = false;
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
@@ -199,18 +199,20 @@ namespace AIUnityTester.Editor
                 _serverProcess.ErrorDataReceived += (sender, e) => {
                     if (!string.IsNullOrEmpty(e.Data)) 
                     {
-                        _serverLog.AppendLine($"[ERR] {{e.Data}}");
+                        _serverLog.AppendLine("[ERR] " + e.Data);
                         Repaint();
                     }
                 };
 
                 _serverProcess.Start();
+                _serverProcess.BeginOutputReadLine();
+                _serverProcess.BeginErrorReadLine();
 
                 UnityEngine.Debug.Log("Python Bridge Server Started.");
             }
             catch (System.Exception e)
             {
-                UnityEngine.Debug.LogError($"Failed to start server: {e.Message}");
+                UnityEngine.Debug.LogError("Failed to start server: " + e.Message);
             }
         }
 
@@ -240,8 +242,8 @@ namespace AIUnityTester.Editor
             string error = p.StandardError.ReadToEnd();
             p.WaitForExit();
 
-            UnityEngine.Debug.Log($"CMD Output: {output}");
-            if (!string.IsNullOrEmpty(error)) UnityEngine.Debug.LogError($"CMD Error: {error}");
+            UnityEngine.Debug.Log("CMD Output: " + output);
+            if (!string.IsNullOrEmpty(error)) UnityEngine.Debug.LogError("CMD Error: " + error);
         }
 
         private void OnDestroy()
