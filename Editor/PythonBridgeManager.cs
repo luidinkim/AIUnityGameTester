@@ -193,20 +193,18 @@ namespace AIUnityTester.Editor
                     if (!string.IsNullOrEmpty(e.Data)) 
                     {
                         _serverLog.AppendLine(e.Data);
-                        Repaint(); // GUI 갱신
+                        Repaint(); 
                     }
                 };
                 _serverProcess.ErrorDataReceived += (sender, e) => {
                     if (!string.IsNullOrEmpty(e.Data)) 
                     {
-                        _serverLog.AppendLine($"[ERR] {e.Data}");
+                        _serverLog.AppendLine($"[ERR] {{e.Data}}");
                         Repaint();
                     }
                 };
 
                 _serverProcess.Start();
-                _serverProcess.BeginOutputReadLine();
-                _serverProcess.BeginErrorReadLine();
 
                 UnityEngine.Debug.Log("Python Bridge Server Started.");
             }
