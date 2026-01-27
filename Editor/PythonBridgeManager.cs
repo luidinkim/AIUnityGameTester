@@ -27,10 +27,15 @@ namespace AIUnityTester.Editor
 
         private void OnEnable()
         {
-            // Python Path Setup
-            string scriptRelativePath = "Assets/AIUnityTester/PythonBridge/server.py";
-            _serverScriptPath = Path.Combine(Application.dataPath, "../", scriptRelativePath);
-            _serverScriptPath = Path.GetFullPath(_serverScriptPath);
+            // UPM 패키지 경로 대응
+            string packagePath = "Packages/com.luidin.ai-unity-tester/PythonBridge/server.py";
+            _serverScriptPath = Path.GetFullPath(packagePath);
+
+            // 만약 패키지가 아니라 에셋 폴더에 직접 넣었을 경우를 대비한 예외 처리
+            if (!File.Exists(_serverScriptPath))
+            {
+                _serverScriptPath = Path.GetFullPath("Assets/AIUnityTester/PythonBridge/server.py");
+            }
 
             // Auto-find agent on open
             FindAgent();

@@ -1,0 +1,20 @@
+{
+  "name": "com.luidin.ai-unity-tester",
+  "version": "1.0.0",
+  "displayName": "AI Unity Game Tester",
+  "description": "Autonomous QA agent using LLMs to test Unity games.",
+  "unity": "2022.3",
+  "author": {
+    "name": "luidin",
+    "url": "https://github.com/luidinkim"
+  },
+  "dependencies": {
+  },
+  "keywords": [
+    "ai",
+    "qa",
+    "testing",
+    "llm",
+    "automation"
+  ]
+}
