@@ -1,0 +1,33 @@
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[MemoryCaptures]/
+
+# AssetMeta Checksums
+*.asset.m3u8
+
+# Never ignore Asset meta files
+!*.meta
+
+# Personal settings
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.user
+*.userprefs
+*.pidb
+*.suo
+*.idle
+*.whitelist
+*.patch
+*.diff
+
+# Python Bridge logs/temp
+Assets/AIUnityTester/PythonBridge/__pycache__/
+Assets/AIUnityTester/PythonBridge/last_frame.jpg
+venv/
+.env
