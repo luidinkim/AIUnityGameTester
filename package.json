@@ -1,6 +1,6 @@
 {
   "name": "com.luidin.ai-unity-tester",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "displayName": "AI Unity Game Tester",
   "description": "Autonomous QA agent using LLMs to test Unity games.",
   "unity": "2022.3",
@@ -9,6 +9,9 @@
     "url": "https://github.com/luidinkim"
   },
   "dependencies": {
+    "com.unity.inputsystem": "1.7.0",
+    "com.unity.textmeshpro": "3.0.6",
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask"
   },
   "keywords": [
     "ai",

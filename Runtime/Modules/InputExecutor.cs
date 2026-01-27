@@ -75,14 +75,35 @@ namespace AIUnityTester.Modules
 
         private void PerformKeyPress(string keyName)
         {
-            // 문자열로 된 키 이름을 Key enum으로 변환하는 로직 필요
-            // 예: "Space" -> Key.Space
-            if (System.Enum.TryParse(keyName, out Key key))
+            // 문자열로 된 키 이름을 Key enum으로 변환
+            if (System.Enum.TryParse(keyName, true, out Key key))
             {
-                InputSystem.QueueConfigSettingChangedEvent(_virtualKeyboard, null); // Reset state if needed
-                // Key Down & Up
-                // 가상 장치에 대한 입력은 InputSystem.QueueStateEvent를 통해 더 정교하게 제어 가능
+                // 1. Key Down
+                InputSystem.QueueStateEvent(_virtualKeyboard, new KeyboardState(key));
+                
+                // 2. Short Delay (Optional but recommended for some games to detect press)
+                // In a synchronous context, we just queue the release immediately after.
+                // If the game needs frame-perfect hold, we might need a coroutine.
+                
+                // 3. Key Up (Release)
+                // Creating an empty state essentially releases keys if we don't set them
+                // But for safety, we should explicitly handle it or rely on the fact 
+                // that the next state update will clear it if not persisted.
+                // A simpler way for "Press and Release":
+                
+                // For now, let's just queue the press. 
+                // To properly simulate a "Click" on keyboard, we need to wait a frame usually.
+                // But since this executor is fire-and-forget, we queue both events.
+                
+                // Note: KeyboardState constructor with a key sets that key to be pressed.
+                // To release, we queue a default state.
+                InputSystem.QueueStateEvent(_virtualKeyboard, new KeyboardState()); 
+
                 Debug.Log($"[InputExecutor] Virtual KeyPress: {key}");
+            }
+            else
+            {
+                Debug.LogWarning($"[InputExecutor] Could not parse key: {keyName}");
             }
         }
 
