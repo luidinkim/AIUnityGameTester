@@ -237,13 +237,28 @@ namespace AIUnityTester.Editor
             psi.RedirectStandardError = true;
             psi.CreateNoWindow = true;
 
-            Process p = Process.Start(psi);
-            string output = p.StandardOutput.ReadToEnd();
-            string error = p.StandardError.ReadToEnd();
-            p.WaitForExit();
+            using (Process p = Process.Start(psi))
+            {
+                string output = p.StandardOutput.ReadToEnd();
+                string error = p.StandardError.ReadToEnd();
+                p.WaitForExit();
 
-            UnityEngine.Debug.Log("CMD Output: " + output);
-            if (!string.IsNullOrEmpty(error)) UnityEngine.Debug.LogError("CMD Error: " + error);
+                if (!string.IsNullOrEmpty(output)) 
+                    UnityEngine.Debug.Log($"CMD Output: {output}");
+
+                if (!string.IsNullOrEmpty(error))
+                {
+                    if (p.ExitCode != 0)
+                    {
+                        UnityEngine.Debug.LogError($"CMD Failed (Code {p.ExitCode}): {error}");
+                    }
+                    else
+                    {
+                        // ExitCode가 0이면 성공한 것이므로 stderr 내용은 단순 경고나 알림일 수 있음
+                        UnityEngine.Debug.LogWarning($"CMD Notice: {error}");
+                    }
+                }
+            }
         }
 
         private void OnDestroy()
