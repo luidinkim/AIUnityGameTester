@@ -136,7 +136,7 @@ namespace AIUnityTester.Editor
                 GUI.backgroundColor = Color.white;
                 
                 GUILayout.Label("Server Logs:");
-                _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(150), EditorStyles.helpBox);
+                _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, EditorStyles.helpBox, GUILayout.Height(150));
                 EditorGUILayout.TextArea(_serverLog.ToString(), EditorStyles.miniLabel);
                 EditorGUILayout.EndScrollView();
                 
@@ -157,7 +157,7 @@ namespace AIUnityTester.Editor
 
         private void FindAgent()
         {
-            _targetAgent = FindObjectOfType<AITesterAgent>();
+            _targetAgent = Object.FindAnyObjectByType<AITesterAgent>();
         }
 
         // --- Server Logic (Same as before) ---
