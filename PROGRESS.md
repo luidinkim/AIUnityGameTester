@@ -1,31 +1,67 @@
-# AI Unity Tester Implementation Progress
+# AI Unity Game Tester - Development Progress 🚀
 
-## 🟢 Completed (완료)
-- [x] **Project Architecture Design**: Dual-mode (Direct/MCP) & Stop-and-Think strategy.
-- [x] **Tech Stack Definition**: Unity C# + Python Bridge.
-- [x] **Base Folder Structure**: Script modules and data folders.
-- [x] **Data Schema**: `AIActionData` for communication protocol.
-- [x] **Core Interface**: `ILLMClient` for Strategy Pattern.
-- [x] **Python Bridge Server**: FastAPI-based server for local LLM routing.
-- [x] **MCP Bridge Client**: Unity-side implementation of local server communication.
-- [x] **Main Agent Loop**: `AITesterAgent` for lifecycle management.
-- [x] **Executor Module**: Virtual input simulation (Click, KeyPress) via Input System.
-- [x] **Module Integration**: Connected Agent to Executor for full loop.
-- [x] **Observer Module**: `UIHierarchyDumper` implemented & integrated.
-- [x] **Editor Tooling**: `PythonBridgeManager` upgraded to full Control Panel (Agent + Server).
+**Repository:** [https://github.com/luidinkim/AIUnityGameTester.git](https://github.com/luidinkim/AIUnityGameTester.git)
+**Architecture:** Unity Package (UPM) + Local Python Bridge (MCP)
 
-## 🟢 Ready for Testing (테스트 준비 완료)
-모든 핵심 모듈이 구현되었습니다. `AI Tester > Control Panel`을 통해 시스템을 구동할 수 있습니다.
+## 🟢 Completed (구현 완료)
 
-## 🟡 Future Improvements (추후 개선 사항)
-- [ ] **Direct API Client**: Implementation for Gemini/OpenAI cloud direct calls.
+### 1. Core Architecture
+- [x] **Unity Package Structure**: Refactored to UPM standard (`Runtime`, `Editor`, `package.json`, `.asmdef`).
+- [x] **Dual-Mode Design**: Designed for both Direct API (Cloud) and MCP Bridge (Local/CLI).
+- [x] **Stop-and-Think Strategy**: `Time.timeScale` control to handle LLM latency in real-time games.
 
-## 🔴 To Do (남은 작업)
-- [ ] **Observer Module Enhancements**: UI Hierarchy/Context Dumper.
-- [ ] **Direct API Client**: Implementation for Gemini/OpenAI cloud direct calls.
-- [ ] **Editor Tooling**: Custom Inspector for AITesterAgent and settings.
-- [ ] **Reporting System**: Markdown log exporter with screenshots.
-- [ ] **Test Scenarios**: Creating a sample Unity scene for demonstration.
+### 2. Unity Modules (`Runtime`)
+- [x] **AI Tester Agent**:
+    - Manages the test loop (Capture -> Think -> Act).
+    - Includes `Game Description` field for custom prompt injection.
+- [x] **Input Executor**:
+    - Simulates `Click`, `Drag`, `KeyPress` using Unity's **New Input System**.
+    - Supports virtual mouse and keyboard devices.
+- [x] **Observer (UI Dumper)**:
+    - Extracts Hierarchy tree and screen coordinates from Canvas (UGUI & TextMeshPro).
+- [x] **MCP Bridge Client**:
+    - Communicates with local Python server via HTTP POST.
+
+### 3. Python Bridge (`PythonBridge`)
+- [x] **Universal CLI Wrapper (`server.py`)**:
+    - Runs as a FastAPI server.
+    - Executes external CLI tools (Claude, Gemini, Curl) based on config.
+    - Parses CLI stdout to extract JSON actions.
+- [x] **Dynamic Configuration**:
+    - `tools_config.json` allows users to define custom tool commands.
+    - `mock_agent.py` included for connectivity testing.
+
+### 4. Editor Tooling (`Editor`)
+- [x] **AI Control Panel (`PythonBridgeManager`)**:
+    - **One-Click Server**: Install `pip` requirements and start/stop server from Unity.
+    - **Config Editor**: Create, edit, and save `tools_config.json` directly in the Inspector.
+    - **Agent Control**: Find agent, toggle modes, and start/stop tests.
+    - **Log Viewer**: View server logs (stdout/stderr) in real-time.
+
+### 5. Bug Fixes & Polish
+- [x] **Compiler Errors**: Fixed string escaping, API deprecation, and missing namespace errors.
+- [x] **Dependencies**: Added `UniTask`, `InputSystem`, `TextMeshPro` to `package.json`.
+- [x] **Meta Files**: All meta files generated and synced with Git.
+
+---
+
+## 🟡 To Do / Next Steps (남은 과제)
+
+### 1. Direct API Implementation
+- [ ] **DirectAPIClient.cs**: Implement `ILLMClient` for Google Gemini / OpenAI REST API.
+- [ ] **Secure Key Management**: Store API keys in `ScriptableObject` or environment variables (not in code).
+
+### 2. Reporting System
+- [ ] **Test Report Generator**: Create an HTML/Markdown report after a test session.
+- [ ] **Artifact Saving**: Save screenshots of failed actions or bugs found.
+
+### 3. Usability & Content
+- [ ] **Demo Scene**: Create a simple sample scene (e.g., a button and a moving target) to demonstrate the agent.
+- [ ] **Preset Configs**: Provide pre-made configs for popular tools (Ollama, cursor-cli, etc.).
+
+### 4. Advanced Features
+- [ ] **Vision Analysis**: Add a specialized module to draw bounding boxes on the screenshot for debugging what the AI sees.
+- [ ] **Feedback Loop**: Feed the result of the action (success/fail) back to the AI in the next turn.
 
 ---
 *Last Updated: 2026-01-27*
