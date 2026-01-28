@@ -1,0 +1,25 @@
+{
+  "selected_tool": "mock_cli",
+  "tools": {
+    "mock_cli": {
+      "command": "python",
+      "arguments": ["mock_agent.py", "{image_path}", "{context}"],
+      "description": "Internal mock agent for testing connectivity."
+    },
+    "claude_cli": {
+      "command": "claude",
+      "arguments": ["--message", "{system_prompt}\n\nContext: {context}\nImage: {image_path}"],
+      "description": "Anthropic Claude CLI (Requires authentication)"
+    },
+    "gemini_cli": {
+      "command": "gemini",
+      "arguments": ["ask", "{image_path}", "--text", "{system_prompt} {context}"],
+      "description": "Google Gemini CLI"
+    },
+    "custom_curl": {
+      "command": "curl",
+      "arguments": ["-X", "POST", "http://localhost:11434/api/generate", "-d", "@payload.json"],
+      "description": "Example for Ollama or other local APIs via cURL"
+    }
+  }
+}
