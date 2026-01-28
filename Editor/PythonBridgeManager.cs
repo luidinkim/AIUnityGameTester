@@ -182,22 +182,24 @@ namespace AIUnityTester.Editor
 
         private void CreateDefaultConfig(string path)
         {
-            string json = @"{ 
-  "selected_tool": "mock_cli",
-  "tools": {
-    "mock_cli": {
-      "command": "python",
-      "arguments": ["-c", "import json; print(json.dumps({'thought':'Mock Action', 'actionType':'Wait', 'duration':1.0}))"],
-      "description": "Internal mock for testing."
-    },
-    "claude_cli": {
-      "command": "claude",
-      "arguments": ["--message", "{system_prompt}\n\nGame Description: {context}\nImage: {image_path}"],
-      "description": "Anthropic Claude CLI"
-    }
-  }
-}";
-            File.WriteAllText(path, json);
+            var sb = new StringBuilder();
+            sb.AppendLine("{");
+            sb.AppendLine("  \"selected_tool\": \"mock_cli\",");
+            sb.AppendLine("  \"tools\": {");
+            sb.AppendLine("    \"mock_cli\": {");
+            sb.AppendLine("      \"command\": \"python\",");
+            sb.AppendLine("      \"arguments\": [\"-c\", \"import json; print(json.dumps({'thought':'Mock Action', 'actionType':'Wait', 'duration':1.0}))\"],");
+            sb.AppendLine("      \"description\": \"Internal mock for testing.\"");
+            sb.AppendLine("    },");
+            sb.AppendLine("    \"claude_cli\": {");
+            sb.AppendLine("      \"command\": \"claude\",");
+            sb.AppendLine("      \"arguments\": [\"--message\", \"{system_prompt}\\n\\nGame Description: {context}\\nImage: {image_path}\"],");
+            sb.AppendLine("      \"description\": \"Anthropic Claude CLI\"");
+            sb.AppendLine("    }");
+            sb.AppendLine("  }");
+            sb.AppendLine("}");
+            
+            File.WriteAllText(path, sb.ToString());
         }
 
         private void LoadConfig()
