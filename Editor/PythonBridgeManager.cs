@@ -3,7 +3,7 @@ using UnityEditor;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using AIUnityTester.Core; // AITesterAgent 참조
+using AIUnityTester.Core; 
 
 namespace AIUnityTester.Editor
 {
@@ -13,8 +13,14 @@ namespace AIUnityTester.Editor
         private static Process _serverProcess;
         private string _pythonPath = "python";
         private string _serverScriptPath;
+        private string _userConfigPath; // 유저가 편집 가능한 설정 파일 경로
+        
         private Vector2 _scrollPos;
+        private Vector2 _configScrollPos;
         private static StringBuilder _serverLog = new StringBuilder();
+        
+        private string _configContent = "";
+        private bool _isConfigDirty = false;
 
         // --- Agent Control Variables ---
         private AITesterAgent _targetAgent;
@@ -27,24 +33,44 @@ namespace AIUnityTester.Editor
 
         private void OnEnable()
         {
-            // UPM 패키지 경로 대응
-            string packagePath = "Packages/com.luidin.ai-unity-tester/PythonBridge/server.py";
-            _serverScriptPath = Path.GetFullPath(packagePath);
-
-            // 만약 패키지가 아니라 에셋 폴더에 직접 넣었을 경우를 대비한 예외 처리
+            // 1. 서버 스크립트 경로 (패키지 내부)
+            string packageScriptPath = "Packages/com.luidin.ai-unity-tester/PythonBridge/server.py";
+            _serverScriptPath = Path.GetFullPath(packageScriptPath);
             if (!File.Exists(_serverScriptPath))
             {
+                // 로컬 테스트용 폴백
                 _serverScriptPath = Path.GetFullPath("Assets/AIUnityTester/PythonBridge/server.py");
             }
 
-            // Auto-find agent on open
+            // 2. 유저 설정 파일 경로 (Assets/AIUnityTesterConfig/tools_config.json)
+            string configFolder = Path.Combine(Application.dataPath, "AIUnityTesterConfig");
+            if (!Directory.Exists(configFolder)) Directory.CreateDirectory(configFolder);
+            
+            _userConfigPath = Path.Combine(configFolder, "tools_config.json");
+            
+            // 설정 파일이 없으면 기본값 생성
+            if (!File.Exists(_userConfigPath))
+            {
+                CreateDefaultConfig(_userConfigPath);
+            }
+
+            // 설정 파일 로드
+            LoadConfig();
+
             FindAgent();
         }
 
         private void OnGUI()
         {
+            GUILayout.Label("AI Unity Tester Control Panel", EditorStyles.boldLabel);
+            DrawSeparator();
+            
             DrawAgentControlSection();
             DrawSeparator();
+            
+            DrawConfigEditorSection(); // 설정 편집기 추가
+            DrawSeparator();
+            
             DrawServerControlSection();
         }
 
@@ -55,55 +81,72 @@ namespace AIUnityTester.Editor
             if (_targetAgent == null)
             {
                 EditorGUILayout.HelpBox("AITesterAgent not found in scene.", MessageType.Warning);
-                if (GUILayout.Button("Find Agent in Scene"))
-                {
-                    FindAgent();
-                }
+                if (GUILayout.Button("Find Agent in Scene")) FindAgent();
             }
             else
             {
-                // Agent Status
                 EditorGUILayout.ObjectField("Target Agent", _targetAgent, typeof(AITesterAgent), true);
 
-                // Mode Selection
+                // 게임 설명 편집 (Agent의 필드를 직접 수정)
+                EditorGUILayout.LabelField("Game Description:");
                 EditorGUI.BeginChangeCheck();
-                bool useLocal = EditorGUILayout.Toggle("Use Local (MCP) Mode", _targetAgent.useMCPBridgeMode);
+                string newDesc = EditorGUILayout.TextArea(_targetAgent.gameDescription, GUILayout.Height(60));
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(_targetAgent, "Toggle AI Mode");
-                    _targetAgent.useMCPBridgeMode = useLocal;
+                    Undo.RecordObject(_targetAgent, "Modify Game Description");
+                    _targetAgent.gameDescription = newDesc;
                 }
 
                 GUILayout.Space(5);
-
-                // Control Buttons
+                
+                // 실행 버튼들
                 if (Application.isPlaying)
                 {
                     if (!_targetAgent.IsRunning)
                     {
                         GUI.backgroundColor = Color.cyan;
-                        if (GUILayout.Button("▶ Start AI Test", GUILayout.Height(30)))
-                        {
-                            _targetAgent.StartTest();
-                        }
+                        if (GUILayout.Button("▶ Start AI Test", GUILayout.Height(30))) _targetAgent.StartTest();
                         GUI.backgroundColor = Color.white;
                     }
                     else
                     {
-                        GUI.backgroundColor = new Color(1f, 0.5f, 0.5f); // Soft Red
-                        if (GUILayout.Button("⏹ Stop AI Test", GUILayout.Height(30)))
-                        {
-                            _targetAgent.StopTest();
-                        }
+                        GUI.backgroundColor = new Color(1f, 0.5f, 0.5f);
+                        if (GUILayout.Button("⏹ Stop AI Test", GUILayout.Height(30))) _targetAgent.StopTest();
                         GUI.backgroundColor = Color.white;
-                        EditorGUILayout.HelpBox("AI Agent is RUNNING...", MessageType.Info);
                     }
                 }
                 else
                 {
-                    EditorGUILayout.HelpBox("Enter Play Mode to control the agent.", MessageType.Info);
+                    EditorGUILayout.HelpBox("Enter Play Mode to run tests.", MessageType.Info);
                 }
             }
+        }
+
+        private void DrawConfigEditorSection()
+        {
+            GUILayout.Label("⚙️ Tool Configuration (tools_config.json)", EditorStyles.boldLabel);
+            
+            if (GUILayout.Button("Reload Config File")) LoadConfig();
+
+            _configScrollPos = EditorGUILayout.BeginScrollView(_configScrollPos, GUILayout.Height(100));
+            EditorGUI.BeginChangeCheck();
+            _configContent = EditorGUILayout.TextArea(_configContent, GUILayout.ExpandHeight(true));
+            if (EditorGUI.EndChangeCheck())
+            {
+                _isConfigDirty = true;
+            }
+            EditorGUILayout.EndScrollView();
+
+            if (_isConfigDirty)
+            {
+                GUI.backgroundColor = Color.yellow;
+                if (GUILayout.Button("Save Configuration"))
+                {
+                    SaveConfig();
+                }
+                GUI.backgroundColor = Color.white;
+            }
+            EditorGUILayout.HelpBox($"Path: {_userConfigPath}", MessageType.None);
         }
 
         private void DrawServerControlSection()
@@ -115,72 +158,87 @@ namespace AIUnityTester.Editor
             if (_serverProcess == null || _serverProcess.HasExited)
             {
                 GUI.backgroundColor = Color.green;
-                if (GUILayout.Button("Start Server", GUILayout.Height(25)))
-                {
-                    StartServer();
-                }
+                if (GUILayout.Button("Start Server", GUILayout.Height(25))) StartServer();
                 GUI.backgroundColor = Color.white;
 
-                if (GUILayout.Button("Install Requirements (pip)", GUILayout.Height(20)))
-                {
-                    InstallRequirements();
-                }
+                if (GUILayout.Button("Install Requirements (pip)", GUILayout.Height(20))) InstallRequirements();
             }
             else
             {
                 GUI.backgroundColor = Color.red;
-                if (GUILayout.Button("Stop Server", GUILayout.Height(25)))
-                {
-                    StopServer();
-                }
+                if (GUILayout.Button("Stop Server", GUILayout.Height(25))) StopServer();
                 GUI.backgroundColor = Color.white;
                 
                 GUILayout.Label("Server Logs:");
-                _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, EditorStyles.helpBox, GUILayout.Height(150));
+                _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, EditorStyles.helpBox, GUILayout.Height(120));
                 EditorGUILayout.TextArea(_serverLog.ToString(), EditorStyles.miniLabel);
                 EditorGUILayout.EndScrollView();
                 
-                if (GUILayout.Button("Clear Logs", EditorStyles.miniButton))
-                {
-                    _serverLog.Clear();
-                }
+                if (GUILayout.Button("Clear Logs", EditorStyles.miniButton)) _serverLog.Clear();
             }
         }
 
-        private void DrawSeparator()
+        // --- Helper Methods ---
+
+        private void CreateDefaultConfig(string path)
         {
-            GUILayout.Space(10);
-            Rect rect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 1));
-            GUILayout.Space(10);
+            string json = @"{ 
+  "selected_tool": "mock_cli",
+  "tools": {
+    "mock_cli": {
+      "command": "python",
+      "arguments": ["-c", "import json; print(json.dumps({'thought':'Mock Action', 'actionType':'Wait', 'duration':1.0}))"],
+      "description": "Internal mock for testing."
+    },
+    "claude_cli": {
+      "command": "claude",
+      "arguments": ["--message", "{system_prompt}\n\nGame Description: {context}\nImage: {image_path}"],
+      "description": "Anthropic Claude CLI"
+    }
+  }
+}";
+            File.WriteAllText(path, json);
         }
 
-        private void FindAgent()
+        private void LoadConfig()
         {
-            _targetAgent = Object.FindAnyObjectByType<AITesterAgent>();
+            if (File.Exists(_userConfigPath))
+            {
+                _configContent = File.ReadAllText(_userConfigPath);
+                _isConfigDirty = false;
+            }
         }
 
-        // --- Server Logic (Same as before) ---
-
-        private void InstallRequirements()
+        private void SaveConfig()
         {
-            UnityEngine.Debug.Log("Installing dependencies...");
-            RunCommand(_pythonPath, "-m pip install fastapi uvicorn pydantic multipart");
+            try
+            {
+                File.WriteAllText(_userConfigPath, _configContent);
+                _isConfigDirty = false;
+                UnityEngine.Debug.Log("Configuration Saved.");
+            }
+            catch (System.Exception e)
+            {
+                UnityEngine.Debug.LogError($"Failed to save config: {e.Message}");
+            }
         }
 
         private void StartServer()
         {
             if (!File.Exists(_serverScriptPath))
             {
-                UnityEngine.Debug.LogError("Server script not found at: " + _serverScriptPath);
+                UnityEngine.Debug.LogError($"Server script not found at: {_serverScriptPath}");
                 return;
             }
 
             try 
             {
+                // --config 인자로 유저 설정 파일 경로를 전달
+                string args = $"--config \"{_userConfigPath}\" ";
+
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = _pythonPath;
-                psi.Arguments = "\"" + _serverScriptPath + "\"";
+                psi.Arguments = args;
                 psi.UseShellExecute = false;
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
@@ -190,16 +248,14 @@ namespace AIUnityTester.Editor
                 _serverProcess.StartInfo = psi;
                 
                 _serverProcess.OutputDataReceived += (sender, e) => {
-                    if (!string.IsNullOrEmpty(e.Data)) 
-                    {
+                    if (!string.IsNullOrEmpty(e.Data)) {
                         _serverLog.AppendLine(e.Data);
                         Repaint(); 
                     }
                 };
                 _serverProcess.ErrorDataReceived += (sender, e) => {
-                    if (!string.IsNullOrEmpty(e.Data)) 
-                    {
-                        _serverLog.AppendLine("[ERR] " + e.Data);
+                    if (!string.IsNullOrEmpty(e.Data)) {
+                        _serverLog.AppendLine($"[ERR] {e.Data}");
                         Repaint();
                     }
                 };
@@ -208,14 +264,16 @@ namespace AIUnityTester.Editor
                 _serverProcess.BeginOutputReadLine();
                 _serverProcess.BeginErrorReadLine();
 
-                UnityEngine.Debug.Log("Python Bridge Server Started.");
+                UnityEngine.Debug.Log($"Python Server Started. Config: {_userConfigPath}");
             }
             catch (System.Exception e)
             {
-                UnityEngine.Debug.LogError("Failed to start server: " + e.Message);
+                UnityEngine.Debug.LogError($"Failed to start server: {e.Message}");
             }
         }
 
+        // ... StopServer, InstallRequirements, RunCommand, FindAgent, DrawSeparator 등은 기존과 동일하거나 위 코드에 포함됨 ...
+        
         private void StopServer()
         {
             if (_serverProcess != null && !_serverProcess.HasExited)
@@ -225,6 +283,11 @@ namespace AIUnityTester.Editor
                 _serverProcess = null;
                 UnityEngine.Debug.Log("Python Bridge Server Stopped.");
             }
+        }
+
+        private void InstallRequirements()
+        {
+            RunCommand(_pythonPath, "-m pip install fastapi uvicorn pydantic multipart");
         }
 
         private void RunCommand(string cmd, string args)
@@ -243,24 +306,28 @@ namespace AIUnityTester.Editor
                 string error = p.StandardError.ReadToEnd();
                 p.WaitForExit();
 
-                if (!string.IsNullOrEmpty(output)) 
-                    UnityEngine.Debug.Log($"CMD Output: {output}");
-
+                if (!string.IsNullOrEmpty(output)) UnityEngine.Debug.Log($"CMD Output: {output}");
                 if (!string.IsNullOrEmpty(error))
                 {
-                    if (p.ExitCode != 0)
-                    {
-                        UnityEngine.Debug.LogError($"CMD Failed (Code {p.ExitCode}): {error}");
-                    }
-                    else
-                    {
-                        // ExitCode가 0이면 성공한 것이므로 stderr 내용은 단순 경고나 알림일 수 있음
-                        UnityEngine.Debug.LogWarning($"CMD Notice: {error}");
-                    }
+                    if (p.ExitCode != 0) UnityEngine.Debug.LogError($"CMD Error: {error}");
+                    else UnityEngine.Debug.LogWarning($"CMD Notice: {error}");
                 }
             }
         }
 
+        private void FindAgent()
+        {
+            _targetAgent = Object.FindAnyObjectByType<AITesterAgent>();
+        }
+
+        private void DrawSeparator()
+        {
+            GUILayout.Space(10);
+            Rect rect = EditorGUILayout.GetControlRect(false, 1);
+            EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 1));
+            GUILayout.Space(10);
+        }
+        
         private void OnDestroy()
         {
             StopServer();

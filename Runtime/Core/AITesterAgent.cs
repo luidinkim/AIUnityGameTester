@@ -9,7 +9,8 @@ namespace AIUnityTester.Core
     public class AITesterAgent : MonoBehaviour
     {
         [Header("Settings")]
-        public bool useMCPBridgeMode = true; // Editor Window에서 접근 가능하도록 public으로 변경
+        public bool useMCPBridgeMode = true; 
+        [TextArea(3, 10)] public string gameDescription = "Describe your game objectives and controls here.";
         [SerializeField] private float actionDelay = 1.0f; 
 
         [Header("Modules")]
@@ -17,7 +18,7 @@ namespace AIUnityTester.Core
         [SerializeField] private Modules.UIHierarchyDumper uiDumper; 
 
         private ILLMClient _llmClient;
-        public bool IsRunning { get; private set; } = false; // 외부에서 상태 확인 가능
+        public bool IsRunning { get; private set; } = false; 
 
         private void Start()
         {
@@ -28,21 +29,13 @@ namespace AIUnityTester.Core
 
             Debug.Log("Agent Ready. Open 'AI Tester > Control Panel' to operate.");
         }
-
-        private void Update()
-        {
-            // 키보드 단축키 유지 (선택 사항)
-            if (Input.GetKeyDown(KeyCode.K) && !IsRunning)
-            {
-                StartTest();
-            }
-        }
+        
+        // ... (Update 생략) ...
 
         public void StartTest()
         {
             if (IsRunning) return;
             
-            // 모드에 따라 클라이언트 다시 초기화
             if (useMCPBridgeMode)
             {
                 _llmClient = new MCPBridgeClient();
@@ -68,22 +61,22 @@ namespace AIUnityTester.Core
             IsRunning = true;
             Debug.Log($"=== AI Testing Started (Mode: {(useMCPBridgeMode ? "Local/MCP" : "Cloud API")}) ===");
             
-            // 초기화 대기
             UniTask initTask = _llmClient.InitializeAsync();
             yield return new WaitUntil(() => initTask.Status.IsCompleted());
 
             while (IsRunning)
             {
-                // 1. Freeze & Capture
-                // Time.timeScale = 0; // 필요시 활성화
                 yield return new WaitForEndOfFrame();
 
                 Texture2D screenShot = CaptureScreen();
                 string context = GetGameContext();
+                
+                // 게임 설명과 컨텍스트를 합쳐서 전달
+                string fullContext = $"[Game Description]\n{gameDescription}\n\n[Current State]\n{context}";
 
-                // 2. Think (Async)
-                var task = _llmClient.RequestActionAsync(screenShot, context);
+                var task = _llmClient.RequestActionAsync(screenShot, fullContext);
                 yield return new WaitUntil(() => task.Status.IsCompleted());
+// ... (이하 동일)
 
                 AIActionData decision = task.GetAwaiter().GetResult();
 

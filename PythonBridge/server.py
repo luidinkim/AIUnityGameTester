@@ -4,13 +4,15 @@ import uvicorn
 import json
 import os
 import subprocess
-import re
+import argparse
+import sys
 
 # --- Configuration ---
 HOST = "127.0.0.1"
 PORT = 8000
+
+# Default paths (will be overridden by args)
 CONFIG_FILE = "tools_config.json"
-PROMPT_FILE = "system_prompt.txt"
 
 app = FastAPI()
 
@@ -25,22 +27,17 @@ class ActionResponse(BaseModel):
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            return json.load(f)
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[Bridge] Error reading config file at {CONFIG_FILE}: {e}")
+    else:
+        print(f"[Bridge] Config file not found at {CONFIG_FILE}")
     return None
 
-def load_system_prompt():
-    if os.path.exists(PROMPT_FILE):
-        with open(PROMPT_FILE, "r") as f:
-            return f.read()
-    return "Respond in JSON."
-
 def extract_json(text):
-    """
-    Extracts JSON object from a string that might contain other text.
-    """
     try:
-        # Try finding the first { and last }
         start = text.find('{')
         end = text.rfind('}') + 1
         if start != -1 and end != -1:
@@ -63,12 +60,11 @@ async def ask_llm(
     
     print(f"[Bridge] Request Received. Context len: {len(context)}")
 
-    # 2. Load Config & Prompt
+    # 2. Load Config
     config = load_config()
-    system_prompt = load_system_prompt()
     
     if not config:
-        return create_error_response("Configuration file not found.")
+        return create_error_response(f"Configuration file not found at {CONFIG_FILE}")
 
     tool_name = config.get("selected_tool", "mock_cli")
     tool = config["tools"].get(tool_name)
@@ -82,24 +78,34 @@ async def ask_llm(
     
     # Replace placeholders
     final_args = []
+    # System Prompt is now embedded in the tool definition or context, 
+    # but strictly speaking, we want a hardcoded system prompt for JSON format.
+    # Let's create a minimal system prompt string here if needed, or rely on the tool config.
+    system_prompt_text = "You are a QA agent. Respond in JSON."
+
     for arg in args_template:
         replaced = arg.replace("{image_path}", image_path)
         replaced = replaced.replace("{context}", context)
-        replaced = replaced.replace("{system_prompt}", system_prompt)
+        replaced = replaced.replace("{system_prompt}", system_prompt_text) 
         final_args.append(replaced)
 
     full_command = [cmd] + final_args
-    print(f"[Bridge] Executing: {full_command}")
+    print(f"[Bridge] Executing Tool '{tool_name}': {full_command}")
 
     # 4. Execute CLI
     try:
-        # shell=True only if needed (e.g. windows specific commands), generally False is safer
-        # On Windows, python commands might need `python` as cmd.
+        # shell=True is often needed for 'python' or complex commands on Windows
+        # checking if command is python script execution
+        use_shell = False
+        if cmd == "python" or cmd.endswith(".py") or cmd == "curl":
+            use_shell = True
+            
         result = subprocess.run(
             full_command, 
             capture_output=True, 
             text=True, 
-            encoding='utf-8'
+            encoding='utf-8',
+            shell=use_shell
         )
         
         stdout = result.stdout
@@ -116,7 +122,7 @@ async def ask_llm(
             return parsed_json
         else:
             print(f"[Bridge] Failed to parse JSON. Raw Output:\n{stdout}")
-            return create_error_response("Failed to parse JSON from tool output.")
+            return create_error_response("Failed to parse JSON from tool output. Check server logs.")
 
     except Exception as e:
         print(f"[Bridge] Execution Error: {e}")
@@ -130,10 +136,17 @@ def create_error_response(msg):
         "targetPosition": {"x":0,"y":0},
         "keyName": "",
         "textToType": "",
-        "duration": 1.0
+        "duration": 2.0
     }
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, help="Path to tools_config.json")
+    args = parser.parse_args()
+
+    if args.config:
+        CONFIG_FILE = args.config
+
     print(f"Starting MCP Bridge Server at http://{HOST}:{PORT}")
-    print(f"Edit 'tools_config.json' to configure your AI tool.")
+    print(f"Using Config File: {CONFIG_FILE}")
     uvicorn.run(app, host=HOST, port=PORT)

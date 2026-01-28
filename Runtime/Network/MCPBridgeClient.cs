@@ -28,10 +28,12 @@ namespace AIUnityTester.Network
 
             WWWForm form = new WWWForm();
             form.AddBinaryData("screenshot", imageBytes, "screen.jpg", "image/jpeg");
-            form.AddField("context", context);
+            // context에는 이제 [Game Description] + [UI Tree]가 포함되어 있음
+            form.AddField("context", context); 
 
             using (UnityWebRequest www = UnityWebRequest.Post(BASE_URL + ENDPOINT, form))
             {
+// ... (이하 동일)
                 // 타임아웃 설정 (로컬 LLM은 느릴 수 있음)
                 www.timeout = 60; 
 
