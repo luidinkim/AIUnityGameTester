@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
+using Cysharp.Threading.Tasks;
 using AIUnityTester.Data;
 
 namespace AIUnityTester.Modules
@@ -27,14 +28,14 @@ namespace AIUnityTester.Modules
             if (_virtualKeyboard != null) InputSystem.RemoveDevice(_virtualKeyboard);
         }
 
-        public void Execute(AIActionData action)
+        public async UniTask Execute(AIActionData action)
         {
             if (action == null) return;
 
             switch (action.actionType)
             {
                 case "Click":
-                    PerformClick(action.screenPosition);
+                    await PerformClick(action.screenPosition);
                     break;
                 case "KeyPress":
                     PerformKeyPress(action.keyName);
@@ -43,34 +44,88 @@ namespace AIUnityTester.Modules
                     PerformType(action.textToType);
                     break;
                 case "Wait":
-                    // Wait은 Agent 루프에서 처리됨
+                    // Wait duration is handled in AITesterAgent
+                    Debug.Log($"[InputExecutor] AI requested Wait for {action.duration}s");
                     break;
             }
         }
 
-        private void PerformClick(Vector2 normalizedPos)
+        private async UniTask PerformClick(Vector2 normalizedPos)
         {
-            // 0~1 좌표를 픽셀 좌표로 변환
+            // Unity coordinates: (0,0) is Bottom-Left.
+            // AI coordinates: (0,0) is Top-Left.
+            // AI sends 0.95 for Bottom. Unity needs 0.05ish for Bottom.
+            // Therefore, Inversion IS required.
             Vector2 pixelPos = new Vector2(
                 normalizedPos.x * Screen.width,
-                normalizedPos.y * Screen.height
+                (1.0f - normalizedPos.y) * Screen.height
             );
 
-            // 마우스 이동 및 클릭 이벤트 생성
+            Debug.Log($"[InputExecutor] Screen Resolution: {Screen.width}x{Screen.height}");
+            Debug.Log($"[InputExecutor] Virtual Click Attempt at {pixelPos} (Normalized: {normalizedPos})");
+
+            bool uiClicked = PerformUIClick(pixelPos);
+            
+            // Even if UI was clicked, we move the virtual mouse for visual feedback and gameplay inputs
+            // 1. Move
+            InputSystem.QueueStateEvent(_virtualMouse, new MouseState { position = pixelPos });
+            InputSystem.Update();
+            
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate); 
+
+            // 2. Press
             InputSystem.QueueStateEvent(_virtualMouse, new MouseState
             {
                 position = pixelPos,
                 buttons = 1 << (int)MouseButton.Left
             });
+            InputSystem.Update();
+            
+            await UniTask.Delay(System.TimeSpan.FromSeconds(0.1f)); 
 
-            // 클릭 뗌 (Release) 이벤트도 즉시 큐에 추가
+            // 3. Release
             InputSystem.QueueStateEvent(_virtualMouse, new MouseState
             {
                 position = pixelPos,
                 buttons = 0
             });
+            InputSystem.Update();
+            
+            await UniTask.Yield();
 
-            Debug.Log($"[InputExecutor] Virtual Click at {pixelPos}");
+            Debug.Log($"[InputExecutor] Virtual Click Completed at {pixelPos}. UI Hit: {uiClicked}");
+        }
+
+        private bool PerformUIClick(Vector2 screenPos)
+        {
+            if (UnityEngine.EventSystems.EventSystem.current == null) return false;
+
+            var eventData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current)
+            {
+                position = screenPos
+            };
+
+            var results = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+            UnityEngine.EventSystems.EventSystem.current.RaycastAll(eventData, results);
+
+            if (results.Count > 0)
+            {
+                // Log all hits for debugging
+                foreach (var res in results)
+                {
+                    Debug.Log($"[InputExecutor] Raycast Hit: {res.gameObject.name} (Depth: {res.depth}, SortingLayer: {res.sortingLayer})");
+                }
+
+                var target = results[0].gameObject;
+                Debug.Log($"[InputExecutor] Engaging Primary Target: {target.name}");
+
+                // Simulate typical button click sequence: Down -> Up -> Click
+                UnityEngine.EventSystems.ExecuteEvents.Execute(target, eventData, UnityEngine.EventSystems.ExecuteEvents.pointerDownHandler);
+                UnityEngine.EventSystems.ExecuteEvents.Execute(target, eventData, UnityEngine.EventSystems.ExecuteEvents.pointerUpHandler);
+                UnityEngine.EventSystems.ExecuteEvents.Execute(target, eventData, UnityEngine.EventSystems.ExecuteEvents.pointerClickHandler);
+                return true;
+            }
+            return false;
         }
 
         private void PerformKeyPress(string keyName)

@@ -10,32 +10,65 @@ namespace AIUnityTester.Network
 {
     public class MCPBridgeClient : ILLMClient
     {
-        private const string BASE_URL = "http://127.0.0.1:8000";
+        private string _baseUrl;
         private const string ENDPOINT = "/ask";
+
+        public string ApiKey { get; set; }
+        public int Port { get; set; } = 8000;
+
+        public MCPBridgeClient(int port = 8000, string apiKey = null)
+        {
+            Port = port;
+            ApiKey = apiKey;
+            _baseUrl = $"http://127.0.0.1:{Port}";
+        }
 
         public async UniTask<bool> InitializeAsync()
         {
-            // 간단한 헬스 체크 (서버가 켜져 있는지 확인)
-            // 실제 구현 시 /health 같은 가벼운 엔드포인트를 호출하는 것이 좋음.
-            // 여기서는 생략하고 true 반환.
-            Debug.Log("[MCPBridgeClient] Initialized (Target: Localhost)");
-            return await UniTask.FromResult(true);
+            Debug.Log($"[MCPBridgeClient] Initialized (Target: {_baseUrl})");
+            
+            // Health check
+            try
+            {
+                using (UnityWebRequest www = UnityWebRequest.Get(_baseUrl + "/health"))
+                {
+                    www.timeout = 5;
+                    await www.SendWebRequest();
+                    
+                    if (www.result == UnityWebRequest.Result.Success)
+                    {
+                        Debug.Log("[MCPBridgeClient] Server is healthy!");
+                        return true;
+                    }
+                    else
+                    {
+                        Debug.LogError($"[MCPBridgeClient] Server health check failed: {www.error}");
+                        return false;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[MCPBridgeClient] Connection failed: {e.Message}");
+                return false;
+            }
         }
 
         public async UniTask<AIActionData> RequestActionAsync(Texture2D screenshot, string context)
         {
-            byte[] imageBytes = screenshot.EncodeToJPG(75); // 품질 75%로 압축
+            byte[] imageBytes = screenshot.EncodeToJPG(75);
 
             WWWForm form = new WWWForm();
             form.AddBinaryData("screenshot", imageBytes, "screen.jpg", "image/jpeg");
-            // context에는 이제 [Game Description] + [UI Tree]가 포함되어 있음
             form.AddField("context", context); 
-
-            using (UnityWebRequest www = UnityWebRequest.Post(BASE_URL + ENDPOINT, form))
+            if (!string.IsNullOrEmpty(ApiKey))
             {
-// ... (이하 동일)
-                // 타임아웃 설정 (로컬 LLM은 느릴 수 있음)
-                www.timeout = 60; 
+                form.AddField("api_key", ApiKey);
+            }
+
+            using (UnityWebRequest www = UnityWebRequest.Post(_baseUrl + ENDPOINT, form))
+            {
+                www.timeout = 120; // 로컬 LLM은 느릴 수 있음
 
                 try 
                 {
@@ -44,23 +77,32 @@ namespace AIUnityTester.Network
                     if (www.result != UnityWebRequest.Result.Success)
                     {
                         Debug.LogError($"[MCPBridgeClient] Network Error: {www.error}");
-                        return null;
+                        return CreateErrorAction(www.error);
                     }
 
                     string jsonResponse = www.downloadHandler.text;
-                    // Python 서버의 응답(JSON)을 파싱
-                    // 주의: Python의 snake_case와 C#의 camelCase 매핑 필요할 수 있음.
-                    // 여기서는 간단히 구조가 같다고 가정하거나 직접 매핑.
-                    
-                    // JSON 데이터 보정을 위해 간단한 전처리(필요시)
                     return JsonConvert.DeserializeObject<AIActionData>(jsonResponse);
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"[MCPBridgeClient] Exception: {e.Message}");
-                    return null;
+                    return CreateErrorAction(e.Message);
                 }
             }
+        }
+
+        private AIActionData CreateErrorAction(string message)
+        {
+            return new AIActionData
+            {
+                thought = $"Error: {message}",
+                actionType = "Wait",
+                screenPosition = Vector2.zero,
+                targetPosition = Vector2.zero,
+                keyName = "",
+                textToType = "",
+                duration = 2.0f
+            };
         }
     }
 }

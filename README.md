@@ -1,85 +1,81 @@
-# AI Unity Game Tester 🎮🤖
+# AI Unity Game Tester 🤖🎮
 
-**AI Unity Game Tester** is an autonomous QA agent that plays your Unity game using Multimodal LLMs (Gemini, GPT-4, Claude). It observes the game screen and UI hierarchy, plans actions ("Stop-and-Think"), and executes inputs (Click, Drag, Type) to test game mechanics or find bugs.
+**AI Unity Game Tester** is an autonomous QA agent that uses Multimodal LLMs (Google Gemini 1.5/2.0) to playtest your Unity game, find bugs, and generate reports.
 
-## ✨ Features
+It supports **Headless Local CLI** (Free & Unlimited) and **Direct Cloud API** (Fast) modes, making it versatile for both local debugging and CI/CD pipelines.
 
-*   **Dual-Mode Brain**:
-    *   **☁️ Direct API Mode**: Connects directly to Google Gemini / OpenAI APIs (High Performance).
-    *   **🏠 MCP Bridge Mode**: Connects to local LLMs, Ollama, or CLI tools via a local Python server (Free/Unlimited).
-*   **Stop-and-Think Strategy**: Pauses `Time.timeScale` to handle API latency, enabling testing of real-time action games.
-*   **Context-Aware**: Analyzes both **Visuals** (Screenshot) and **Semantics** (UI Hierarchy Text) for accurate decision making.
-*   **Integrated Control Panel**: One-click Python server setup and agent control directly within the Unity Editor.
-*   **Virtual Input System**: Uses Unity's new Input System to simulate hardware-level mouse and keyboard events.
+---
+
+## ✨ Key Features
+
+### 🧠 Dual AI Modes
+1.  **Gemini Headless (Local CLI)**
+    *   **Cost**: Free (via Google AI Studio credentials).
+    *   **Speed**: Moderate.
+    *   **Advantage**: Unlimited queries, no per-request cost. Runs locally via `gemini.cmd` subprocess.
+2.  **Gemini Flash API (Cloud)**
+    *   **Cost**: API Key billing (Free tier available).
+    *   **Speed**: ⚡ Very Fast (0.5s ~ 1.5s).
+    *   **Advantage**: Best for quick regression testing.
+
+### 🖱️ Validated Input System
+*   **Hybrid Input**: Combines Virtual Mouse (Unity Input System) for gameplay with **Direct UI Event Invocation** (uGUI) for menus.
+*   **100% Click Reliability**: Automatically detecting UI elements via Raycast and strictly invoking `IPointerDown/Up/Click` ensures buttons never miss a click.
+*   **Coordinate Auto-Correction**: Automatically handles Y-axis inversion between AI vision (Top-Left) and Unity UI (Bottom-Left).
+
+### 📝 Comprehensive Reporting
+*   **Reasoning Logs**: See exactly *why* the AI made a decision with dedicated `[AI Reasoning]` logs in the console.
+*   **Markdown & HTML Reports**: Auto-generates detailed test reports including:
+    *   Step-by-step actions.
+    *   AI Thought Process.
+    *   Screenshots of every step.
 
 ---
 
 ## 📦 Installation
 
 ### Prerequisites
-1.  **Unity 2022.3 LTS** or higher.
-2.  **Python 3.8+** installed and added to your system PATH.
-3.  **New Input System** package enabled in Unity (`com.unity.inputsystem`).
+*   Unity 2022.3 or later.
+*   Python 3.10+ installed and added to PATH.
+*   **Google Gemini CLI** (for Headless mode):
+    ```bash
+    pip install -U google-genai
+    # Ensure you have authenticated or have API keys set up
+    ```
 
-### Option A: Copy to Project (Recommended)
-1.  Download this repository (ZIP or Git Clone).
-2.  Copy the `Assets/AIUnityTester` folder into your Unity project's `Assets` folder.
-
-### Option B: Git Submodule
-If you want to keep it updated:
-```bash
-cd YourUnityProject/Assets
-git submodule add https://github.com/luidinkim/AIUnityGameTester.git AIUnityTester
-```
+### Install via Unity Package Manager
+1.  Open Unity -> Window -> Package Manager.
+2.  Click **"+"** -> **"Add package from git URL..."**.
+3.  Enter the repository URL:
+    ```
+    https://github.com/luidinkim/AIUnityGameTester.git?path=/Assets/Plugins/AIUnityGameTester
+    ```
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Setup the Environment
-1.  Open your Unity Project.
-2.  Go to the top menu: **AI Tester > Control Panel**.
-3.  In the **Python Bridge Server** section:
-    *   Click **Install Requirements (pip)** to install `fastapi`, `uvicorn`, etc.
-    *   Click **Start Server** (Green Button). You should see logs indicating the server is running at `127.0.0.1:8000`.
-
-### 2. Prepare the Scene
-1.  Create an empty GameObject in your scene and name it `AI_Agent`.
-2.  Add the `AITesterAgent` component to it.
-3.  (Optional) Configure settings in the Inspector:
-    *   **Use MCP Bridge Mode**: Checked (Default) for local testing.
-    *   **Action Delay**: Time to wait between actions.
-
-### 3. Run the Test
-1.  Press **Play** in the Unity Editor.
-2.  In the **Control Panel** window, click **Find Agent in Scene**.
-3.  Click **▶ Start AI Test**.
-4.  Watch the AI take control! (The game will pause/resume automatically as the AI thinks).
+1.  **Open Control Panel**:
+    *   Menu: `AI Tester` -> `Control Panel`.
+2.  **Select Driver**:
+    *   **Gemini_Headless**: Uses your local Python environment. Best for deep testing.
+    *   **Gemini_Flash_API**: Requires API Key. Best for speed.
+3.  **Run Server** (Headless Mode only):
+    *   Click "Start Server" in the control panel.
+    *   Wait for the green "Online" indicator.
+4.  **Start Testing**:
+    *   Enter Play Mode.
+    *   Click "Start Test" in the inspector or Control Panel.
 
 ---
 
-## 📂 Architecture
+## 🛠️ Configuration
 
-```mermaid
-graph TD
-    Unity[Unity Runtime] -->|Screenshot + UI Tree| Python[Python Bridge Server]
-    Python -->|Prompt| LLM[LLM / CLI Tool]
-    LLM -->|JSON Action| Python
-    Python -->|JSON Action| Unity
-    Unity -->|Virtual Input| GameLogic
-```
+The tool configuration is located at `Assets/AIUnityTesterConfig/tools_config.json`.
+*   **selected_tool**: Determines which mode runs by default.
+*   You can edit this file manually or use the Unity Editor UI.
 
-*   **Core**: `AITesterAgent.cs` coordinates the loop.
-*   **Eyes**: `UIHierarchyDumper.cs` extracts text info from Canvases.
-*   **Hands**: `InputExecutor.cs` simulates clicks/keypresses.
-*   **Bridge**: `server.py` (FastAPI) handles local communication.
+---
 
-## 🛠 Configuration
-
-### Switching Modes
-*   **Local / MCP Mode**: Uses the local Python server. Useful for debugging without API costs.
-    *   Edit `Assets/AIUnityTester/PythonBridge/server.py` to connect to your specific local LLM or CLI tool.
-*   **Cloud API Mode** (Coming Soon): Will connect directly to Gemini/OpenAI endpoints using API Keys.
-
-## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 🤝 Contributing
+Issues and Pull Requests are welcome!

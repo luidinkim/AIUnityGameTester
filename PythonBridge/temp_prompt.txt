@@ -1,0 +1,125 @@
+SYSTEM: You are an autonomous QA agent testing a Unity game.
+Analyze the provided game screen image and the UI context text.
+Decide the next action to test the game or find bugs.
+
+RESPONSE FORMAT:
+You MUST respond ONLY with a valid JSON object. Do not include markdown code blocks (```json ... ```) or any explanation outside the JSON.
+
+JSON SCHEMA:
+{
+  "thought": "Reasoning behind the action",
+  "actionType": "Click" | "Drag" | "Wait" | "KeyPress" | "Type",
+  "screenPosition": { "x": 0.0 to 1.0, "y": 0.0 to 1.0 },
+  "targetPosition": { "x": 0.0 to 1.0, "y": 0.0 to 1.0 }, 
+  "keyName": "Space" | "W" | "Enter" ... (if KeyPress),
+  "textToType": "string" (if Type),
+  "duration": float (seconds, for Wait)
+}
+
+EXAMPLE:
+{ "thought": "Clicking Start Button", "actionType": "Click", "screenPosition": { "x": 0.5, "y": 0.5 }, "targetPosition": {"x":0,"y":0}, "keyName": "", "textToType": "", "duration": 0 }
+IMAGE: @C:\Users\tjdql\Desktop\SoccerRog\SoccerRogue\Assets\Plugins\AIUnityGameTester\PythonBridge\last_frame.jpg
+CONTEXT: [Game Description]
+Describe your game objectives and controls here.
+
+[Current State]
+=== Active UI Elements ===
+[Canvas] Canvas (RenderMode: ScreenSpaceOverlay)
+[Canvas] Canvas-Minimap (RenderMode: ScreenSpaceOverlay)
+[Canvas] Canvas (RenderMode: ScreenSpaceOverlay)
+-- [Rect] "Panel_EventView" (Pos: 540,960 Size: 1080x1920)
+---- [Rect] "Panel_Header" (Pos: 540,1845 Size: 1080x150)
+------ [Rect] "Panel_SeasonProgress" (Pos: 526,1859 Size: 1028x35)
+-------- [Slider] "Slider" (Pos: 683,1859 Size: 706x53)
+---------- [Image] "Background" (Pos: 683,1859 Size: 706x26)
+---------- [Image] "Fill Area" (Pos: 684,1859 Size: 704x26)
+------------ [Image] "Fill" (Pos: 338,1859 Size: 22x26)
+---------- [Image] "Outline (1)" (Pos: 683,1859 Size: 721x35)
+---------- [Rect] "Handle Slide Area" (Pos: 342,1859 Size: 20x53)
+------------ [Rect] "Symbol_NextBattle (1)" (Pos: 342,1859 Size: 60x69)
+-------------- [Image] "Panel_ActionFeedback (4)" (Pos: 342,1859 Size: 60x69)
+-------------- [Text] "Text_Day" (Pos: 342,1822 Size: 261x100)
+-------- [Rect] "Symbol_LastMaxReachDay" (Pos: 714,1853 Size: 261x107)
+---------- [Image] "Icon" (Pos: 714,1853 Size: 15x52)
+---------- [Text] "Text_LastMaxReachDay" (Pos: 714,1822 Size: 261x100)
+-------- [Image] "Symbol_End" (Pos: 1029,1863 Size: 51x72)
+---------- [Text] "Text_MaxDay" (Pos: 1029,1822 Size: 261x100)
+------ [Rect] "Panel_NextBattleInfo" (Pos: 157,1858 Size: 339x121)
+-------- [Text] "Text_VS" (Pos: 157,1871 Size: 100x100)
+-------- [Text] "Text_D-day" (Pos: 157,1834 Size: 100x100)
+-------- [Image] "Image_MyTeamPortrait" (Pos: 68,1858 Size: 80x92)
+-------- [Image] "Image_OpponentPortrait" (Pos: 246,1858 Size: 78x97)
+---- [Scroll] "Panel_EventHistory" (Pos: 540,565 Size: 1180x805)
+------ [Image] "Frame_Center" (Pos: 540,554 Size: 1106x722)
+------ [Image] "Frame_Header" (Pos: 539,978 Size: 1134x143)
+------ [Image] "Frame_Footer" (Pos: 539,83 Size: 1134x229)
+------ [Rect] "CenterPanel" (Pos: 540,976 Size: 1080x150)
+-------- [Rect] "Button_OpenPlayerDetail" (Pos: 1005,976 Size: 62x62)
+---------- [Image] "Panel_ActionFeedback (3)" (Pos: 984,976 Size: 80x92)
+---------- [Image] "Panel_ActionFeedback (4)" (Pos: 1015,951 Size: 42x42)
+-------- [Rect] "Panel_TacticInfo" (Pos: 491,945 Size: 402x121)
+---------- [Rect] "Tactic_0" (Pos: 372,945 Size: 100x100)
+------------ [Image] "Image_Icon" (Pos: 372,977 Size: 100x100)
+------------ [Rect] "Level" (Pos: 372,1014 Size: 100x20)
+-------------- [Image] "Dot" (Pos: 351,1024 Size: 17x17)
+-------------- [Image] "Dot (1)" (Pos: 365,1024 Size: 17x17)
+-------------- [Image] "Dot (2)" (Pos: 379,1024 Size: 17x17)
+-------------- [Image] "Dot (3)" (Pos: 393,1024 Size: 17x17)
+---------- [Rect] "Tactic_1" (Pos: 462,945 Size: 100x100)
+------------ [Image] "Image_Icon" (Pos: 462,977 Size: 100x100)
+------------ [Rect] "Level" (Pos: 462,1014 Size: 100x20)
+-------------- [Image] "Dot" (Pos: 441,1024 Size: 17x17)
+-------------- [Image] "Dot (1)" (Pos: 455,1024 Size: 17x17)
+-------------- [Image] "Dot (2)" (Pos: 469,1024 Size: 17x17)
+-------------- [Image] "Dot (3)" (Pos: 483,1024 Size: 17x17)
+---------- [Rect] "Tactic_2" (Pos: 552,945 Size: 100x100)
+------------ [Image] "Image_Icon" (Pos: 552,977 Size: 100x100)
+------------ [Rect] "Level" (Pos: 552,1014 Size: 100x20)
+-------------- [Image] "Dot" (Pos: 531,1024 Size: 17x17)
+-------------- [Image] "Dot (1)" (Pos: 545,1024 Size: 17x17)
+-------------- [Image] "Dot (2)" (Pos: 559,1024 Size: 17x17)
+-------------- [Image] "Dot (3)" (Pos: 573,1024 Size: 17x17)
+---------- [Rect] "Tactic_3" (Pos: 642,945 Size: 100x100)
+------------ [Image] "Image_Icon" (Pos: 642,977 Size: 100x100)
+------------ [Rect] "Level" (Pos: 642,1014 Size: 100x20)
+-------------- [Image] "Dot" (Pos: 621,1024 Size: 17x17)
+-------------- [Image] "Dot (1)" (Pos: 635,1024 Size: 17x17)
+-------------- [Image] "Dot (2)" (Pos: 649,1024 Size: 17x17)
+-------------- [Image] "Dot (3)" (Pos: 663,1024 Size: 17x17)
+-------- [Rect] "Panel_Morale" (Pos: 150,1003 Size: 198x35)
+---------- [Image] "Background" (Pos: 191,1003 Size: 187x39)
+------------ [Image] "Inner" (Pos: 191,1003 Size: 187x41)
+---------- [Image] "Outline" (Pos: 192,1003 Size: 198x47)
+---------- [Image] "Portrait" (Pos: 86,1003 Size: 70x70)
+---------- [Text] "Text (TMP)" (Pos: 87,976 Size: 100x50)
+-------- [Rect] "Panel_Exp" (Pos: 150,938 Size: 198x35)
+---------- [Image] "Background" (Pos: 190,938 Size: 185x23)
+------------ [Image] "Inner" (Pos: 190,938 Size: 185x41)
+---------- [Image] "Outline" (Pos: 192,938 Size: 198x38)
+---------- [Image] "Portrait" (Pos: 86,938 Size: 70x70)
+------ [Image] "Viewport" (Pos: 540,562 Size: 1180x678)
+-------- [Rect] "Content" (Pos: 540,369 Size: 1180x293)
+---------- [Rect] "EventCard(Clone)" (Pos: 540,364 Size: 1000x303)
+------------ [Text] "Text_EventTitle" (Pos: 540,456 Size: 1000x90)
+------------ [Image] "Description" (Pos: 540,307 Size: 1000x158)
+-------------- [Text] "Text_EventResult" (Pos: 560,307 Size: 960x78)
+------ [Rect] "Panel_ChoicesContainer" (Pos: 540,104 Size: 1056x180)
+-------- [Button] "ChoiceListItem(Clone)" (Pos: 540,104 Size: 1056x180)
+---------- [Image] "Image_Background" (Pos: 540,104 Size: 1056x180)
+---------- [Text] "Text_MainSelect" (Pos: 540,136 Size: 1056x100)
+---------- [Rect] "Effects" (Pos: 540,71 Size: 1056x50)
+------------ [Rect] "EventEffects" (Pos: 550,71 Size: 183x50)
+-------------- [Image] "Image_Background" (Pos: 550,71 Size: 183x50)
+---------------- [Text] "Text (TMP) (6)" (Pos: 557,71 Size: 137x30)
+-------------- [Image] "Panel_ActionFeedback (7)" (Pos: 459,73 Size: 75x78)
+---- [Rect] "Panel_Currency" (Pos: 795,1865 Size: 510x50)
+---- [Rect] "Panel_Roulette" (Pos: 540,960 Size: 1080x1920)
+-- [Rect] "MatchResultModal" (Pos: 540,960 Size: 1080x1920)
+---- [Rect] "ResultText" 
+---- [Rect] "ScoreText" 
+---- [Rect] "StatsPanel" 
+---- [Rect] "ConfirmButton" 
+-- [Rect] "Panel_MatchResult" (Pos: 540,960 Size: 1080x1920)
+-- [Rect] "Panel_Option" (Pos: 540,960 Size: 1080x1920)
+
+Respond with JSON only.

@@ -1,0 +1,137 @@
+
+--- 2026-01-28 22:14:24 ---
+PROMPT: IMAGE: @C:\Users\tjdql\Desktop\SoccerRog\SoccerRogue\Assets\Plugins\AIUnityGameTester\PythonBridge\l...
+EXTRACTED: None
+RAW_RESPONSE_LEN: 18168
+
+--- 2026-01-28 22:14:29 ---
+PROMPT: IMAGE: @C:\Users\tjdql\Desktop\SoccerRog\SoccerRogue\Assets\Plugins\AIUnityGameTester\PythonBridge\l...
+EXTRACTED: None
+RAW_RESPONSE_LEN: 7566
+
+--- 2026-01-28 22:14:35 ---
+PROMPT: IMAGE: @C:\Users\tjdql\Desktop\SoccerRog\SoccerRogue\Assets\Plugins\AIUnityGameTester\PythonBridge\l...
+EXTRACTED: None
+RAW_RESPONSE_LEN: 5730
+
+--- 2026-01-28 22:21:40 ---
+EXTRACTED: False
+RAW_CLEAN: 11;?0;◇  Ready (PythonBridge)                                                         
+ ███            █████████  ██████████ ██████   ██████ █████ ██████   █████ █████
+░░░███         ███░░░░░███░░█
+
+--- 2026-01-28 22:21:52 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > IMAGE: [Image last_frame.jpg]                                              │
+│   CONTEXT: [G
+
+--- 2026-01-28 22:22:06 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ >                                                                            │
+│   ---- [Rect]
+
+--- 2026-01-28 22:25:41 ---
+EXTRACTED: False
+RAW_CLEAN: 11;?0;◇  Ready (PythonBridge)                                                         
+ ███            █████████  ██████████ ██████   ██████ █████ ██████   █████ █████
+░░░███         ███░░░░░███░░█
+
+--- 2026-01-28 22:25:53 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > IMAGE: [Image last_frame.jpg]                                              │
+│   CONTEXT: [G
+
+--- 2026-01-28 22:26:07 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > ---- [Rect] "ConfirmButton"                                                │
+│              
+
+--- 2026-01-28 22:26:20 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > ---- [Rect] "ConfirmButton"                                                │
+│              
+
+--- 2026-01-28 22:26:34 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > ---- [Rect] "ConfirmButton"                                                │
+│              
+
+--- 2026-01-28 22:26:49 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > ---- [Rect] "ConfirmButton"                                                │
+│              
+
+--- 2026-01-28 22:27:03 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > ---- [Rect] "ConfirmButton"                                                │
+│              
+
+--- 2026-01-28 22:29:33 ---
+EXTRACTED: False
+RAW_CLEAN: 11;?0;◇  Ready (PythonBridge)                                                         
+ ███            █████████  ██████████ ██████   ██████ █████ ██████   █████ █████
+░░░███         ███░░░░░███░░█
+
+--- 2026-01-28 22:29:46 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > IMAGE: [Image last_frame.jpg]                                              │
+│   CONTEXT: [G
+
+--- 2026-01-28 22:32:32 ---
+EXTRACTED: False
+RAW_CLEAN: 11;?0;◇  Ready (PythonBridge)                                                         
+ ███            █████████  ██████████ ██████   ██████ █████ ██████   █████ █████
+░░░███         ███░░░░░███░░█
+
+--- 2026-01-28 22:32:45 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > IMAGE: [Image last_frame.jpg]                                              │
+│   CONTEXT: [G
+
+--- 2026-01-28 22:32:58 ---
+EXTRACTED: False
+RAW_CLEAN: 
+ 1 GEMINI.md file
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > -- [Rect] "Panel_MatchResult" (Pos: 540,960 Size: 1080x1920)               │
+│              
+
+--- 2026-01-28 22:38:44 ---
+PROMPT_LEN: 6187
+EXTRACTED: False
+RAW_CLEAN: 11;?0;◇  Ready (PythonBridge)                                                          ███            █████████  ██████████ ██████   ██████ █████ ██████   █████ █████░░░███         ███░░░░░███░░███░░░░░█░░██████ ██████ ░░███ ░░██████ ░░███ ░░███  ░░░███      ███     ░░░  ░███  █ ░  ░███░█████░███  ░
+
+--- 2026-01-28 22:39:26 ---
+PROMPT_LEN: 11310
+EXTRACTED: False
+RAW_CLEAN:  1 GEMINI.md file╭──────────────────────────────────────────────────────────────────────────────╮│ > IMAGE: [Image last_frame.jpg]                                              ││   CONTEXT: [Game Description]                                                ││   Describe your game objectives and contr

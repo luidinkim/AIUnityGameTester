@@ -8,16 +8,34 @@ namespace AIUnityTester.Core
 {
     public class AITesterAgent : MonoBehaviour
     {
-        [Header("Settings")]
-        public bool useMCPBridgeMode = true; 
+        public enum ExecutionMode
+        {
+            MCPBridge,          // Python Bridge를 통한 로컬 LLM
+            DirectGeminiFlash,  // Gemini 3 Flash (빠른 응답)
+            DirectGeminiPro,    // Gemini 3 Pro High (고성능)
+            DirectClaudeOpus    // Claude Opus 4.5 with Thinking
+        }
+
+        [Header("Execution Mode")]
+        public ExecutionMode executionMode = ExecutionMode.MCPBridge;
+        
+        [Header("LLM Settings")]
+        [Tooltip("API Key for Gemini/Claude. Required for Direct modes AND Native Bridge (High Speed).")]
+        public string apiKey = "";
+
+        [Header("Game Context")]
         [TextArea(3, 10)] public string gameDescription = "Describe your game objectives and controls here.";
-        [SerializeField] private float actionDelay = 1.0f; 
+        public float actionDelay = 1.0f; 
 
         [Header("Modules")]
         [SerializeField] private Modules.InputExecutor executor; 
         [SerializeField] private Modules.UIHierarchyDumper uiDumper; 
 
+        [Header("Reporting")]
+        public bool recordTestReport = true;
+
         private ILLMClient _llmClient;
+        private TestReportManager _reportManager;
         public bool IsRunning { get; private set; } = false; 
 
         private void Start()
@@ -27,42 +45,109 @@ namespace AIUnityTester.Core
             if (uiDumper == null) uiDumper = GetComponent<Modules.UIHierarchyDumper>();
             if (uiDumper == null) uiDumper = gameObject.AddComponent<Modules.UIHierarchyDumper>();
 
-            Debug.Log("Agent Ready. Open 'AI Tester > Control Panel' to operate.");
+            // 리포트 매니저 초기화
+            _reportManager = new TestReportManager();
+
+            Debug.Log("[AITesterAgent] Ready. Open 'AI Tester > Control Panel' to operate.");
         }
-        
-        // ... (Update 생략) ...
 
         public void StartTest()
         {
             if (IsRunning) return;
             
-            if (useMCPBridgeMode)
+            _llmClient = CreateClient();
+
+            if (_llmClient == null)
             {
-                _llmClient = new MCPBridgeClient();
+                Debug.LogError("[AITesterAgent] Failed to create LLM client.");
+                return;
             }
-            else
+
+            // 리포트 기록 시작
+            if (recordTestReport)
             {
-                Debug.LogWarning("DirectAPIClient is not implemented yet. Switching to MCPBridge.");
-                _llmClient = new MCPBridgeClient();
+                _reportManager.StartNewReport();
             }
 
             StartCoroutine(RunTestLoop());
+        }
+
+        private ILLMClient CreateClient()
+        {
+            switch (executionMode)
+            {
+                case ExecutionMode.MCPBridge:
+                    // 에디터에서 설정한 포트 읽기 (기본값 8000)
+                    int serverPort = PlayerPrefs.GetInt("AITester_ServerPort", 8000);
+                    Debug.Log($"[AITesterAgent] Using MCP Bridge Mode (Port: {serverPort})");
+                    return new MCPBridgeClient(serverPort, apiKey);
+
+                case ExecutionMode.DirectGeminiFlash:
+                    if (string.IsNullOrEmpty(apiKey))
+                    {
+                        Debug.LogError("[AITesterAgent] API Key is required for Direct Gemini Flash mode!");
+                        return null;
+                    }
+                    Debug.Log("[AITesterAgent] Using Direct Gemini 3 Flash");
+                    return new DirectAPIClient(DirectAPIClient.APIProvider.GeminiFlash, apiKey);
+
+                case ExecutionMode.DirectGeminiPro:
+                    if (string.IsNullOrEmpty(apiKey))
+                    {
+                        Debug.LogError("[AITesterAgent] API Key is required for Direct Gemini Pro mode!");
+                        return null;
+                    }
+                    Debug.Log("[AITesterAgent] Using Direct Gemini 3 Pro (High)");
+                    return new DirectAPIClient(DirectAPIClient.APIProvider.GeminiPro, apiKey);
+
+                case ExecutionMode.DirectClaudeOpus:
+                    if (string.IsNullOrEmpty(apiKey))
+                    {
+                        Debug.LogError("[AITesterAgent] API Key is required for Direct Claude Opus mode!");
+                        return null;
+                    }
+                    Debug.Log("[AITesterAgent] Using Direct Claude Opus 4.5 (Thinking)");
+                    return new DirectAPIClient(DirectAPIClient.APIProvider.ClaudeOpus, apiKey);
+
+                default:
+                    return new MCPBridgeClient();
+            }
         }
 
         public void StopTest()
         {
             IsRunning = false;
             StopAllCoroutines();
+
+            // 리포트 저장
+            if (recordTestReport && _reportManager != null && _reportManager.IsRecording)
+            {
+                _reportManager.EndReport();
+                string mdPath = _reportManager.ExportToMarkdown();
+                string htmlPath = _reportManager.ExportToHTML();
+                Debug.Log($"[AITesterAgent] Reports saved: {mdPath}");
+            }
+
             Debug.Log("=== AI Testing Stopped ===");
         }
 
         private IEnumerator RunTestLoop()
         {
             IsRunning = true;
-            Debug.Log($"=== AI Testing Started (Mode: {(useMCPBridgeMode ? "Local/MCP" : "Cloud API")}) ===");
+            Debug.Log($"=== AI Testing Started (Mode: {executionMode}) ===");
             
-            UniTask initTask = _llmClient.InitializeAsync();
+            UniTask<bool> initTask = _llmClient.InitializeAsync();
             yield return new WaitUntil(() => initTask.Status.IsCompleted());
+
+            if (!initTask.GetAwaiter().GetResult())
+            {
+                Debug.LogError("[AITesterAgent] Failed to initialize LLM client.");
+                IsRunning = false;
+                yield break;
+            }
+
+            int failureCount = 0;
+            const int maxConsecutiveFailures = 3;
 
             while (IsRunning)
             {
@@ -70,35 +155,60 @@ namespace AIUnityTester.Core
 
                 Texture2D screenShot = CaptureScreen();
                 string context = GetGameContext();
-                
-                // 게임 설명과 컨텍스트를 합쳐서 전달
                 string fullContext = $"[Game Description]\n{gameDescription}\n\n[Current State]\n{context}";
 
                 var task = _llmClient.RequestActionAsync(screenShot, fullContext);
                 yield return new WaitUntil(() => task.Status.IsCompleted());
-// ... (이하 동일)
 
                 AIActionData decision = task.GetAwaiter().GetResult();
 
-                // 3. Resume & Act
-                // Time.timeScale = 1; 
-                
                 if (decision != null)
                 {
-                    Debug.Log($"[AI Decision] {decision.thought} -> {decision.actionType}");
-                    ExecuteAction(decision);
+                    failureCount = 0; // 성공 시 카운트 초기화
+                    
+                    // User Request: Print explicit reasoning log
+                    Debug.Log($"[AI Reasoning] {decision.thought}");
+                    Debug.Log($"[AI Decision] Action: {decision.actionType} | Pos: {decision.screenPosition} | Text: {decision.textToType}");
+                    
+                    if (recordTestReport)
+                    {
+                        _reportManager.LogStep(decision.thought, decision, screenShot);
+                    }
+
+                    var execTask = ExecuteAction(decision);
+                    yield return new WaitUntil(() => execTask.Status.IsCompleted());
                 }
                 else
                 {
-                    Debug.LogError("Failed to get decision from AI.");
+                    failureCount++;
+                    Debug.LogWarning($"[AITesterAgent] Failed to get decision (Failure {failureCount}/{maxConsecutiveFailures}). Retrying in 2s...");
+                    
+                    if (failureCount >= maxConsecutiveFailures)
+                    {
+                        Debug.LogError("[AITesterAgent] Too many consecutive failures. Stopping test.");
+                        Destroy(screenShot);
+                        StopTest();
+                        yield break;
+                    }
+
+                    Destroy(screenShot);
+                    yield return new WaitForSeconds(2.0f); // 실패 시 잠시 대기
+                    continue;
                 }
 
-                // 4. Wait for result
-                yield return new WaitForSeconds(actionDelay);
-                
-                // 메모리 정리
                 Destroy(screenShot);
+                
+                // 만약 결정이 "Wait"이고 고유의 duration이 있다면 그것을 사용, 아니면 기본 actionDelay 사용
+                float finalDelay = actionDelay;
+                if (decision != null && decision.actionType == "Wait" && decision.duration > 0)
+                {
+                    finalDelay = decision.duration;
+                }
+                
+                yield return new WaitForSeconds(finalDelay);
             }
+
+            Debug.Log("=== AI Testing Stopped ===");
         }
 
         private Texture2D CaptureScreen()
@@ -118,15 +228,15 @@ namespace AIUnityTester.Core
             return "Context Info Not Available (UIHierarchyDumper missing)";
         }
 
-        private void ExecuteAction(AIActionData action)
+        private async UniTask ExecuteAction(AIActionData action)
         {
             if (executor != null)
             {
-                executor.Execute(action);
+                await executor.Execute(action);
             }
             else
             {
-                Debug.LogWarning("InputExecutor is missing! Cannot execute action.");
+                Debug.LogWarning("[AITesterAgent] InputExecutor is missing! Cannot execute action.");
             }
         }
     }

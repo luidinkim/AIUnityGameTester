@@ -4,22 +4,59 @@
     "mock_cli": {
       "command": "python",
       "arguments": ["mock_agent.py", "{image_path}", "{context}"],
-      "description": "Internal mock agent for testing connectivity."
+      "description": "테스트용 Mock 에이전트 (연결 확인용)",
+      "requires_api_key": false,
+      "image_support": true
     },
     "claude_cli": {
       "command": "claude",
       "arguments": ["--message", "{system_prompt}\n\nContext: {context}\nImage: {image_path}"],
-      "description": "Anthropic Claude CLI (Requires authentication)"
+      "description": "Anthropic Claude CLI (인증 필요)",
+      "requires_api_key": true,
+      "image_support": true
     },
     "gemini_cli": {
       "command": "gemini",
       "arguments": ["ask", "{image_path}", "--text", "{system_prompt} {context}"],
-      "description": "Google Gemini CLI"
+      "description": "Google Gemini CLI",
+      "requires_api_key": true,
+      "image_support": true
     },
-    "custom_curl": {
+    "ollama_llava": {
       "command": "curl",
-      "arguments": ["-X", "POST", "http://localhost:11434/api/generate", "-d", "@payload.json"],
-      "description": "Example for Ollama or other local APIs via cURL"
+      "arguments": [
+        "-s", "-X", "POST", "http://localhost:11434/api/generate",
+        "-H", "Content-Type: application/json",
+        "-d", "{\"model\": \"llava\", \"prompt\": \"{system_prompt}\\n{context}\", \"images\": [\"{image_base64}\"], \"stream\": false}"
+      ],
+      "description": "Ollama LLaVA (로컬 Vision 모델)",
+      "requires_api_key": false,
+      "image_support": true,
+      "notes": "Ollama 서버가 localhost:11434에서 실행 중이어야 합니다"
+    },
+    "ollama_mistral": {
+      "command": "curl",
+      "arguments": [
+        "-s", "-X", "POST", "http://localhost:11434/api/generate",
+        "-H", "Content-Type: application/json",
+        "-d", "{\"model\": \"mistral\", \"prompt\": \"{system_prompt}\\n{context}\", \"stream\": false}"
+      ],
+      "description": "Ollama Mistral (텍스트 전용)",
+      "requires_api_key": false,
+      "image_support": false,
+      "notes": "Vision 미지원, 텍스트 컨텍스트만 전송됨"
+    },
+    "lmstudio": {
+      "command": "curl",
+      "arguments": [
+        "-s", "-X", "POST", "http://localhost:1234/v1/chat/completions",
+        "-H", "Content-Type: application/json",
+        "-d", "{\"messages\": [{\"role\": \"system\", \"content\": \"{system_prompt}\"}, {\"role\": \"user\", \"content\": \"{context}\"}], \"temperature\": 0.7}"
+      ],
+      "description": "LM Studio 로컬 서버 (OpenAI 호환 API)",
+      "requires_api_key": false,
+      "image_support": false,
+      "notes": "LM Studio가 localhost:1234에서 실행 중이어야 합니다"
     }
   }
 }
